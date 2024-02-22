@@ -14,7 +14,6 @@ def set_figsize(figsize=(3.5, 2.5)):  # @save
     plt.rcParams['figure.figsize'] = figsize
 
 
-# @save
 def set_axes(axes, xlabel, ylabel, xlim, ylim, xscale, yscale, legend):
     """设置matplotlib的轴"""
     axes.set_xlabel(xlabel)
@@ -75,9 +74,10 @@ class Animator:  # @save
         self.fig, self.axes = plt.subplots(nrows, ncols, figsize=figsize)
         if nrows * ncols == 1:
             self.axes = [self.axes, ]
+        self.legend = legend
         # 使用lambda函数捕获参数
         self.config_axes = lambda: set_axes(
-            self.axes[0], xlabel, ylabel, xlim, ylim, xscale, yscale, legend)
+            self.axes[0], xlabel, ylabel, xlim, ylim, xscale, yscale, self.legend)
         self.X, self.Y, self.fmts = None, None, fmts
 
     # 实时跟新
@@ -110,3 +110,10 @@ class Animator:  # @save
     def update_draw(self, x, y):
         self.update(x, y)
         self.draw()
+
+    def rename_legend(self, name, _index=0):
+        self.legend[_index] = name
+
+    def clear(self):
+        self.X = None
+        self.Y = None
