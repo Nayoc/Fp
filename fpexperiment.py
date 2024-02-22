@@ -6,7 +6,7 @@ import torchvision.models as models
 import net.fpcnn as fpcnn
 
 
-def fp_train():
+def fp_train(device='cpu'):
     train_iter, test_iter = mtrain.load_data(batch_size=200)
 
     net = fpcnn.mAlexNet(_out=2, dropout=0.1)
@@ -14,6 +14,9 @@ def fp_train():
     # net = fpcnn.mMultilayer(_in=900)
     # net = fpcnn.mResNet(input_channels=1, num_channels=2)
 
+    net = net.to(device=mtrain.try_gpu())
+    # 展示数据所在设备
+    print(net[0].weight.data.device)
     loss = nn.MSELoss()
     trainer = torch.optim.SGD(net.parameters(), lr=0.3)
 

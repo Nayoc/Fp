@@ -19,11 +19,14 @@ error_scale = 1.5
 norm_label_params = ()
 
 
-def load_data(type='simulate', batch_size=20):
-    train_rssi = torch.tensor(data_read(filename='train_rssi.gz', type=type))
-    train_label = torch.tensor(data_read(filename='train_label.gz', type=type))
-    test_rssi = torch.tensor(data_read(filename='test_rssi.gz', type=type))
-    test_label = torch.tensor(data_read(filename='test_label.gz', type=type))
+def load_data(device, type='simulate', batch_size=20):
+
+
+    train_rssi = torch.tensor(data_read(filename='train_rssi.gz', type=type), device=try_gpu())
+    train_label = torch.tensor(data_read(filename='train_label.gz', type=type), device=try_gpu())
+    test_rssi = torch.tensor(data_read(filename='test_rssi.gz', type=type), device=try_gpu())
+    test_label = torch.tensor(data_read(filename='test_label.gz', type=type), device=try_gpu())
+
 
     # 扩展加入通道维度
     train_rssi = extand(train_rssi)
@@ -250,3 +253,16 @@ def load(net, filename):
     except Exception as e:
         print('no model is loaded')
         return net
+
+def try_gpu(i=0):
+    """如果存在，则返回gpu(i)，否则返回cpu()"""
+    if torch.cuda.device_count() >= i + 1:
+        return torch.device(f'cuda:{i}')
+    return torch.device('cpu')
+
+
+def try_all_gpus():
+    """返回所有可用的GPU，如果没有GPU，则返回[cpu(),]"""
+    devices = [torch.device(f'cuda:{i}')
+               for i in range(torch.cuda.device_count())]
+    return devices if devices else [torch.device('cpu')]
