@@ -11,7 +11,7 @@ xmax = 0
 ymin = 0
 ymax = 0
 ap_num = 0
-rp_step = 2
+rp_step = 1.5
 
 error_bottom = -0.5
 error_top = 0.5
@@ -186,8 +186,8 @@ def simulate(is_show=True):
     train_rssi = sample_data[:, 0:-2]
     train_label = sample_data[:, -2:]
 
-    # 获取测试数据：随机从data中选择，数量为训练数据的1/5
-    test_num = train_rssi.shape[0] // 5
+    # 获取测试数据：随机从data中选择，数量为训练数据的1/4
+    test_num = train_rssi.shape[0] // 4
     test_index = np.random.choice(train_rssi.shape[0], size=test_num, replace=False)
     test_data = data[test_index, :]
     test_rssi = test_data[:, 0:-2]

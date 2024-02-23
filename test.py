@@ -1,17 +1,23 @@
 import numpy as np
 import struct
+import torch
 
-num = 12.3
-i = 0
-while num > 1 or num < 0.1:
-    if num >= 1:
-        num /= 10
-        i += 1
-        continue
-    if num < 0.1:
-        num *= 10
-        i -= 1
-        continue
-    break
-print(num)
-print(i)
+a = torch.arange(36)
+a = a.reshape((4, 1, 3, 3))
+b = torch.arange(8)
+b = b.reshape((4, 2))
+print(a)
+
+
+def norm(data):
+    min = data.min()
+    max = data.max()
+    # norm_data = 2 * (data - min) / (max - min) - 1
+    norm_data = (data - min) / (max - min)
+    return norm_data
+
+# def denorm(data,):
+
+# def denorm(tensor,)
+
+norm(a)

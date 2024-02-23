@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch.utils import data
+from torch.optim.lr_scheduler import ExponentialLR
 from mplt import Animator
 import os
 import gzip
@@ -16,28 +17,24 @@ model_params_path = os.path.dirname(__file__) + '/model/'
 error_scale = 1.5
 
 # 标签归一化参数，用于还原标签值
-norm_label_params = ()
+norm_label_params = (-10, 50)
 
 
-def load_data(device, type='simulate', batch_size=20):
-
-
+def load_data(type='simulate', batch_size=20):
     train_rssi = torch.tensor(data_read(filename='train_rssi.gz', type=type), device=try_gpu())
     train_label = torch.tensor(data_read(filename='train_label.gz', type=type), device=try_gpu())
     test_rssi = torch.tensor(data_read(filename='test_rssi.gz', type=type), device=try_gpu())
     test_label = torch.tensor(data_read(filename='test_label.gz', type=type), device=try_gpu())
 
-
     # 扩展加入通道维度
     train_rssi = extand(train_rssi)
     test_rssi = extand(test_rssi)
 
-    norm = nn.BatchNorm2d(num_features=1)
     norm_train_rssi = norm(train_rssi)
     norm_test_rssi = norm(test_rssi)
 
-    norm_train_label = norm_label(train_label)
-    norm_test_label = norm_label(test_label)
+    norm_train_label = norm(train_label, norm_label_params)
+    norm_test_label = norm(test_label, norm_label_params)
 
     train_data = data.TensorDataset(norm_train_rssi, norm_train_label)
     test_data = data.TensorDataset(norm_test_rssi, norm_test_label)
@@ -47,17 +44,30 @@ def load_data(device, type='simulate', batch_size=20):
 
 
 def norm_label(labels):
-    # 计算 x 和 y 维度的绝对值的最大值
-    abs_max_x = torch.abs(labels)[:, 0].max()
-    abs_max_y = torch.abs(labels)[:, 1].max()
-
-    global norm_label_params
-    norm_label_params = torch.tensor((abs_max_x, abs_max_y))
-
     # 归一化标签
     normalized_labels = labels / norm_label_params
 
     return normalized_labels
+
+
+def norm(data, norm_params=None):
+    if norm_params is None:
+        min = data.min()
+        max = data.max()
+    else:
+        min = norm_params[0]
+        max = norm_params[1]
+    # norm_data = 2 * (data - min) / (max - min) - 1
+    norm_data = (data - min) / (max - min)
+    return norm_data
+
+
+def denorm(data, norm_params):
+    min = norm_params[0]
+    max = norm_params[1]
+    origin = data * (max - min) + min
+    # origin = (data + 1) * (max - min) / 2 + min
+    return origin
 
 
 def denormalize_labels(normalized_labels, abs_max):
@@ -101,8 +111,8 @@ def size_read(type='simulate'):
 # 坐标差距在一定阈值内
 def accuracy(y_hat, y):
     """计算预测正确的数量"""
-    y_hat_origin = denormalize_labels(y_hat, norm_label_params)
-    y_origin = denormalize_labels(y, norm_label_params)
+    y_hat_origin = denorm(y_hat, norm_label_params)
+    y_origin = denorm(y, norm_label_params)
 
     distance = torch.norm(y_hat_origin - y_origin, dim=1)
     # print(f'y_hat:{y_hat},y:{y}')
@@ -195,6 +205,12 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
     animator_term = Animator(xlabel='epoch', xlim=[1, record_term], ylim=[0, 0.9],
                              legend=['train loss', 'train acc', 'test acc'])
 
+    # 创建学习率调度器
+    # scheduler = ExponentialLR(updater, gamma=0.9)
+
+    # 打印当前学习率
+    # current_lr = updater.state_dict()['param_groups'][0]['lr']
+
     """训练模型"""
     for epoch in range(num_epochs):
 
@@ -227,7 +243,10 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
 
         animator_global.update(epoch + 1, (global_weight_train_loss, train_acc) + (test_acc,))
         animator_term.update(epoch % record_term + 1, (term_weight_train_loss, train_acc) + (test_acc,))
-        print(f'epoch:{epoch},loss:{global_weight_train_loss},train_acc:{train_acc},test_acc:{test_acc}')
+        print(
+            f'epoch:{epoch},loss:{round(global_weight_train_loss, 8)},train_acc:{round(train_acc, 5)},test_acc:{round(test_acc, 5)}')
+
+        adjust_learning_rate(updater, epoch)
 
     animator_global.draw()
 
@@ -254,6 +273,7 @@ def load(net, filename):
         print('no model is loaded')
         return net
 
+
 def try_gpu(i=0):
     """如果存在，则返回gpu(i)，否则返回cpu()"""
     if torch.cuda.device_count() >= i + 1:
@@ -266,3 +286,17 @@ def try_all_gpus():
     devices = [torch.device(f'cuda:{i}')
                for i in range(torch.cuda.device_count())]
     return devices if devices else [torch.device('cpu')]
+
+
+def adjust_learning_rate(optimizer, epoch):
+    lr = optimizer.param_groups[0]['lr']
+
+    if lr < 0.00001:
+        return
+
+    if epoch % 100 == 0 and epoch != 0:
+        lr = lr * 0.9  # 学习率没100个epoch乘以0.9
+
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = lr
+        print(f'---learning rate change---,current lr is:{lr}')

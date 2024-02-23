@@ -1,1 +1,1 @@
-{"train_rssi.gz": [200, 30, 30], "train_label.gz": [200, 2], "test_rssi.gz": [40, 30, 30], "test_label.gz": [40, 2]}
+{"train_rssi.gz": [648, 30, 30], "train_label.gz": [648, 2], "test_rssi.gz": [162, 30, 30], "test_label.gz": [162, 2]}
