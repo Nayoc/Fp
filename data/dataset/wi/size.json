@@ -1,0 +1,1 @@
+{"train_rssi.gz": [60000, 18], "train_label.gz": [60000, 2], "test_rssi.gz": [20000, 18], "test_label.gz": [20000, 2]}

@@ -1,8 +1,6 @@
 import torch
-from torch import nn
 from torch.utils import data
-from torch.optim.lr_scheduler import ExponentialLR
-from mplt import Animator
+from view.mplt import Animator
 import os
 import gzip
 import numpy as np
@@ -11,30 +9,39 @@ import json
 # 模拟数据集地址
 simulate_data_path = os.path.dirname(__file__) + '/data/dataset/simulate/'
 
+wi_data_path = os.path.dirname(__file__) + '/data/dataset/wi/'
+
 model_params_path = os.path.dirname(__file__) + '/model/'
 
 # 坐标误差范围表示准确率
-error_scale = 1.5
+error_scale = 2
 
 # 标签归一化参数，用于还原标签值
 norm_label_params = (-10, 50)
 
 
-def load_data(type='simulate', batch_size=20):
-    train_rssi = torch.tensor(data_read(filename='train_rssi.gz', type=type), device=try_gpu())
-    train_label = torch.tensor(data_read(filename='train_label.gz', type=type), device=try_gpu())
-    test_rssi = torch.tensor(data_read(filename='test_rssi.gz', type=type), device=try_gpu())
-    test_label = torch.tensor(data_read(filename='test_label.gz', type=type), device=try_gpu())
+def load_data(source='simulate', batch_size=20):
+    train_rssi = torch.tensor(data_read(filename='train_rssi.gz', source=source), device=try_gpu())
+    train_label = torch.tensor(data_read(filename='train_label.gz', source=source), device=try_gpu())
+    test_rssi = torch.tensor(data_read(filename='test_rssi.gz', source=source), device=try_gpu())
+    test_label = torch.tensor(data_read(filename='test_label.gz', source=source), device=try_gpu())
 
-    # 扩展加入通道维度
-    train_rssi = extand(train_rssi)
-    test_rssi = extand(test_rssi)
+    if source == 'simulate':
+        # 扩展加入通道维度
+        train_rssi = extand(train_rssi)
+        test_rssi = extand(test_rssi)
+
+    if source == 'wi':
+        train_rssi = extand(train_rssi.reshape((-1, 20, 18)))
+        train_label = train_label.reshape((-1, 20, 2))
+        test_rssi = extand(test_rssi.reshape((-1, 20, 18)))
+        test_label = test_label.reshape((-1, 20, 2))
 
     norm_train_rssi = norm(train_rssi)
     norm_test_rssi = norm(test_rssi)
 
-    norm_train_label = norm(train_label, norm_label_params)
-    norm_test_label = norm(test_label, norm_label_params)
+    norm_train_label = norm(train_label)
+    norm_test_label = norm(test_label)
 
     train_data = data.TensorDataset(norm_train_rssi, norm_train_label)
     test_data = data.TensorDataset(norm_test_rssi, norm_test_label)
@@ -82,9 +89,12 @@ def extand(data, dim=1):
     return torch.unsqueeze(data, dim=dim)
 
 
-def data_read(filename='train_rssi.gz', type='simulate'):
-    if type == 'simulate':
+def data_read(filename='train_rssi.gz', source='simulate'):
+    if source == 'simulate':
         data_url = simulate_data_path
+
+    if source == 'wi':
+        data_url = wi_data_path
 
     with open(data_url + 'size.json', 'r') as f:
         size = json.load(f)
@@ -95,8 +105,8 @@ def data_read(filename='train_rssi.gz', type='simulate'):
     return train_label.reshape(size[filename])
 
 
-def size_read(type='simulate'):
-    if type == 'simulate':
+def size_read(source='simulate'):
+    if source == 'simulate':
         data_url = simulate_data_path
 
     with open(data_url + 'size.json', 'r') as f:
@@ -108,16 +118,16 @@ def size_read(type='simulate'):
     return single_rssi_shape
 
 
-# 坐标差距在一定阈值内
-def accuracy(y_hat, y):
+# 返回四个维度的数据，规定误差内的准确数量，平均误差距离，最小误差距离，最大误差距离
+def count_distance(y_hat, y):
     """计算预测正确的数量"""
     y_hat_origin = denorm(y_hat, norm_label_params)
     y_origin = denorm(y, norm_label_params)
 
-    distance = torch.norm(y_hat_origin - y_origin, dim=1)
-    # print(f'y_hat:{y_hat},y:{y}')
+    distance = torch.norm(y_hat_origin - y_origin, dim=len(y_origin.shape)-1)
+    accuracy = (distance < error_scale).sum().item()
 
-    return (distance < error_scale).sum().item()
+    return accuracy, distance.mean(), distance.min(), distance.max()
 
 
 class Accumulator:
@@ -136,15 +146,16 @@ class Accumulator:
         return self.data[idx]
 
 
-def evaluate_accuracy(net, data_iter):
+def evaluate_result(net, data_iter):
     """计算在指定数据集上模型的精度"""
     if isinstance(net, torch.nn.Module):
         net.eval()  # 将模型设置为评估模式
     metric = Accumulator(2)  # 正确预测数、预测总数
     with torch.no_grad():
         for X, y in data_iter:
-            metric.add(accuracy(net(X), y), y.numel())
-    return metric[0] / metric[1]
+            distance = count_distance(net(X), y)
+            metric.add(distance[0], y.numel() / 2)
+    return metric[0] / metric[1], distance[1], distance[2], distance[3]
 
 
 def train_epoch(net, train_iter, loss, updater):
@@ -152,7 +163,7 @@ def train_epoch(net, train_iter, loss, updater):
     # 将模型设置为训练模式
     if isinstance(net, torch.nn.Module):
         net.train()
-    # 训练损失总和、训练准确度总和、样本数
+    # 训练损失总和、训练准确度总和、样本数、平均误差距离、最小误差距离、最大误差距离
     metric = Accumulator(3)
     for X, y in train_iter:
         # 计算梯度并更新参数
@@ -167,9 +178,12 @@ def train_epoch(net, train_iter, loss, updater):
             # 使用定制的优化器和损失函数
             l.sum().backward(retain_graph=True)
             updater(X.shape[0])
-        metric.add(float(l.sum()), accuracy(y_hat, y), y.numel())
+
+        distance = count_distance(y_hat, y)
+        # y.numel()/2是因为最后距离是是坐标聚合出来的，所以总数只有一半
+        metric.add(float(l.sum()), distance[0], y.numel() / 2, distance[1], distance[2], distance[3])
     # 返回训练损失和训练精度
-    return metric[0] / metric[2], metric[1] / metric[2]
+    return metric[0] / metric[2], metric[1] / metric[2], distance[1], distance[2], distance[3]
 
 
 def judge_loss_weight(num):
@@ -198,7 +212,7 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
     term_loss_weight = 1
 
     # 预训练一次，确定损失数量级
-    train_loss, train_acc = train_epoch(net, train_iter, loss, updater)
+    train_loss, train_acc, mean_error, min_error, max_error = train_epoch(net, train_iter, loss, updater)
 
     animator_global = Animator(xlabel='epoch', xlim=[1, num_epochs], ylim=[0, 0.9],
                                legend=['train loss ', 'train acc', 'test acc'])
@@ -214,8 +228,8 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
     """训练模型"""
     for epoch in range(num_epochs):
 
-        train_loss, train_acc = train_epoch(net, train_iter, loss, updater)
-        test_acc = evaluate_accuracy(net, test_iter)
+        train_loss, train_acc, mean_error, min_error, max_error = train_epoch(net, train_iter, loss, updater)
+        test_acc, mean_error, min_error, max_error = evaluate_result(net, test_iter)
 
         if epoch == 0:
             # 调整损失值到0.1-1区间方便观察
@@ -244,7 +258,8 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
         animator_global.update(epoch + 1, (global_weight_train_loss, train_acc) + (test_acc,))
         animator_term.update(epoch % record_term + 1, (term_weight_train_loss, train_acc) + (test_acc,))
         print(
-            f'epoch:{epoch},loss:{round(global_weight_train_loss, 8)},train_acc:{round(train_acc, 5)},test_acc:{round(test_acc, 5)}')
+            f'epoch:{epoch},loss:{round(global_weight_train_loss, 8)},train_acc:{round(train_acc, 5)},test_acc:{round(test_acc, 5)} | '
+            f'mean_error:{mean_error},min_error:{min_error},max_error:{max_error}')
 
         adjust_learning_rate(updater, epoch)
 

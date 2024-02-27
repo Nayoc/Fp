@@ -83,9 +83,9 @@ class mAlexNet(nn.Module):
         return x
 
 
-class gptNet_1(nn.Module):
+class GPTNet1(nn.Module):
     def __init__(self, num_classes=2):
-        super(gptNet_1, self).__init__()
+        super(GPTNet1, self).__init__()
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
         self.fc1 = nn.Linear(64 * 7 * 7, 128)  # 修改全连接层的输入尺寸
@@ -100,6 +100,25 @@ class gptNet_1(nn.Module):
         x = torch.relu(self.fc1(x))
         x = self.fc2(x)
         return x
+
+
+class WiGPTNet(nn.Module):
+    def __init__(self, num_classes=40):
+        super(WiGPTNet, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
+        self.fc1 = nn.Linear(64 * 5 * 4, 128)  # 修改全连接层的输入尺寸
+        self.fc2 = nn.Linear(128, num_classes)  # 输出2个标签，坐标 x 和 y
+
+    def forward(self, x):
+        x = torch.relu(self.conv1(x))
+        x = torch.max_pool2d(x, kernel_size=2, stride=2)
+        x = torch.relu(self.conv2(x))
+        x = torch.max_pool2d(x, kernel_size=2, stride=2)
+        x = x.view(-1, 64 * 5 * 4)  # 将特征图展平
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x.view(-1, 20, 2)
 
 
 class Residual(nn.Module):
