@@ -35,5 +35,6 @@ if __name__ == '__main__':
     # net = fpcnn.mLeNet()
     # net = fpcnn.mMultilayer(_in=900)
     # net = fpcnn.mResNet(input_channels=1, num_channels=2)
-    fp_train(fpcnn.WiCnn1(), 0.3, 128, epochs=500, record_term=100, source='wi')
+    fp_train(fpcnn.WiCnn1(), 0.001, 128, epochs=5000, record_term=100, source='wi')
     # fp_train(fpcnn.SimuCnn1(), 0.001, 32, epochs=500, record_term=100, source='simulate')
+    # fp_train(fpcnn.mAlexNet(), 0.001, 32, epochs=500, record_term=100, source='simulate')

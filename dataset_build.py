@@ -25,12 +25,15 @@ def wi_build():
     # 分为60000训练集，20000测试集
     train_num = 60000
 
-    train_data = rsrp[0:train_num, :]
+    train_rssi = rsrp[0:train_num, :]
+    train_rssi = np.tile(train_rssi, (1, 18)).reshape(-1, 18, 18)
+    test_rssi = rsrp[train_num:, :]
+    test_rssi = np.tile(test_rssi, (1, 18)).reshape(-1, 18, 18)
+
     train_label = pos[0:train_num, :]
-    test_data = rsrp[train_num:, :]
     test_label = pos[train_num:, :]
 
-    return train_data, train_label, test_data, test_label
+    return train_rssi, train_label, test_rssi, test_label
 
 
 def dataset_build(source='simulate'):
