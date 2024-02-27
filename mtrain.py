@@ -124,7 +124,7 @@ def count_distance(y_hat, y):
     y_hat_origin = denorm(y_hat, norm_label_params)
     y_origin = denorm(y, norm_label_params)
 
-    distance = torch.norm(y_hat_origin - y_origin, dim=len(y_origin.shape)-1)
+    distance = torch.norm(y_hat_origin - y_origin, dim=len(y_origin.shape) - 1)
     accuracy = (distance < error_scale).sum().item()
 
     return accuracy, distance.mean(), distance.min(), distance.max()
@@ -214,9 +214,9 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
     # 预训练一次，确定损失数量级
     train_loss, train_acc, mean_error, min_error, max_error = train_epoch(net, train_iter, loss, updater)
 
-    animator_global = Animator(xlabel='epoch', xlim=[1, num_epochs], ylim=[0, 0.9],
+    animator_global = Animator(xlabel='epoch', xlim=[1, num_epochs], ylim=[0, 1],
                                legend=['train loss ', 'train acc', 'test acc'])
-    animator_term = Animator(xlabel='epoch', xlim=[1, record_term], ylim=[0, 0.9],
+    animator_term = Animator(xlabel='epoch', xlim=[1, record_term], ylim=[0, 1],
                              legend=['train loss', 'train acc', 'test acc'])
 
     # 创建学习率调度器
@@ -251,6 +251,7 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
                 _e = str(_e) if _e > 0 else '(' + str(_e) + ')'
                 animator_term.rename_legend('train loss' + ' 10^' + _e, _index=0)
                 save(net, model_file)
+                print('---------current learning rate:' + str(updater.param_groups[0]['lr']))
 
             else:
                 term_weight_train_loss = train_loss / term_loss_weight
@@ -261,7 +262,7 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
             f'epoch:{epoch},loss:{round(global_weight_train_loss, 8)},train_acc:{round(train_acc, 5)},test_acc:{round(test_acc, 5)} | '
             f'mean_error:{mean_error},min_error:{min_error},max_error:{max_error}')
 
-        adjust_learning_rate(updater, epoch)
+        # adjust_learning_rate(updater, epoch)
 
     animator_global.draw()
 

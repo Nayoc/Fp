@@ -83,9 +83,9 @@ class mAlexNet(nn.Module):
         return x
 
 
-class GPTNet1(nn.Module):
+class SimuCnn1(nn.Module):
     def __init__(self, num_classes=2):
-        super(GPTNet1, self).__init__()
+        super(SimuCnn1, self).__init__()
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
         self.fc1 = nn.Linear(64 * 7 * 7, 128)  # 修改全连接层的输入尺寸
@@ -102,9 +102,9 @@ class GPTNet1(nn.Module):
         return x
 
 
-class WiGPTNet(nn.Module):
+class WiCnn1(nn.Module):
     def __init__(self, num_classes=40):
-        super(WiGPTNet, self).__init__()
+        super(WiCnn1, self).__init__()
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
         self.fc1 = nn.Linear(64 * 5 * 4, 128)  # 修改全连接层的输入尺寸

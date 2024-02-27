@@ -18,7 +18,8 @@ def fp_train(net, lr, batch_size, epochs=100, record_term=100, source='simulate'
     # 展示数据所在设备
     print('设备:' + str(next(net.parameters()).device))
     loss = nn.MSELoss()
-    trainer = torch.optim.SGD(net.parameters(), lr=lr)
+    # trainer = torch.optim.SGD(net.parameters(), lr=lr)
+    trainer = torch.optim.Adam(net.parameters(), lr=lr)
 
     '''
         fp_AlexNet.params
@@ -34,5 +35,5 @@ if __name__ == '__main__':
     # net = fpcnn.mLeNet()
     # net = fpcnn.mMultilayer(_in=900)
     # net = fpcnn.mResNet(input_channels=1, num_channels=2)
-    net = fpcnn.WiGPTNet()
-    fp_train(net, 0.3, 32, epochs=5000, record_term=100, source='wi')
+    fp_train(fpcnn.WiCnn1(), 0.3, 128, epochs=500, record_term=100, source='wi')
+    # fp_train(fpcnn.SimuCnn1(), 0.001, 32, epochs=500, record_term=100, source='simulate')
