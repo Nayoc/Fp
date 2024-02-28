@@ -1,4 +1,4 @@
-from env.simulate_indoor import simulate, batch_simulate
+# from env.simulate_indoor import simulate, batch_simulate
 import gzip
 import numpy as np
 import sys
@@ -11,10 +11,10 @@ simulate_root_path = os.path.dirname(__file__) + "/data/dataset/simulate/"
 wi_root_path = os.path.dirname(__file__) + "/data/dataset/wi/"
 
 
-def simulate_build():
-    # train_rssi, train_label, test_rssi, test_label = simulate()
-    train_rssi, train_label, test_rssi, test_label = batch_simulate(30)
-    return train_rssi, train_label, test_rssi, test_label
+# def simulate_build():
+#     # train_rssi, train_label, test_rssi, test_label = simulate()
+#     train_rssi, train_label, test_rssi, test_label = batch_simulate(30)
+#     return train_rssi, train_label, test_rssi, test_label
 
 
 def wi_build():
@@ -37,9 +37,9 @@ def wi_build():
 
 
 def dataset_build(source='simulate'):
-    if source == 'simulate':
-        root_path = simulate_root_path
-        train_data, train_label, test_data, test_label = simulate_build()
+    # if source == 'simulate':
+    #     root_path = simulate_root_path
+    #     train_data, train_label, test_data, test_label = simulate_build()
     if source == 'wi':
         root_path = wi_root_path
         train_data, train_label, test_data, test_label = wi_build()

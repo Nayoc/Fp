@@ -26,16 +26,9 @@ def load_data(source='simulate', batch_size=20):
     test_rssi = torch.tensor(data_read(filename='test_rssi.gz', source=source), device=try_gpu())
     test_label = torch.tensor(data_read(filename='test_label.gz', source=source), device=try_gpu())
 
-    if source == 'simulate':
-        # 扩展加入通道维度
-        train_rssi = extand(train_rssi)
-        test_rssi = extand(test_rssi)
-
-    if source == 'wi':
-        train_rssi = extand(train_rssi.reshape((-1, 20, 18)))
-        train_label = train_label.reshape((-1, 20, 2))
-        test_rssi = extand(test_rssi.reshape((-1, 20, 18)))
-        test_label = test_label.reshape((-1, 20, 2))
+    # 扩展加入通道维度
+    train_rssi = extand(train_rssi)
+    test_rssi = extand(test_rssi)
 
     norm_train_rssi = norm(train_rssi)
     norm_test_rssi = norm(test_rssi)
@@ -181,7 +174,7 @@ def train_epoch(net, train_iter, loss, updater):
 
         distance = count_distance(y_hat, y)
         # y.numel()/2是因为最后距离是是坐标聚合出来的，所以总数只有一半
-        metric.add(float(l.sum()), distance[0], y.numel() / 2, distance[1], distance[2], distance[3])
+        metric.add(float(l.sum()), distance[0], y.numel() / 2)
     # 返回训练损失和训练精度
     return metric[0] / metric[2], metric[1] / metric[2], distance[1], distance[2], distance[3]
 
@@ -262,7 +255,7 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
             f'epoch:{epoch},loss:{round(global_weight_train_loss, 8)},train_acc:{round(train_acc, 5)},test_acc:{round(test_acc, 5)} | '
             f'mean_error:{mean_error},min_error:{min_error},max_error:{max_error}')
 
-        # adjust_learning_rate(updater, epoch)
+        adjust_learning_rate(updater, epoch)
 
     animator_global.draw()
 
@@ -307,7 +300,7 @@ def try_all_gpus():
 def adjust_learning_rate(optimizer, epoch):
     lr = optimizer.param_groups[0]['lr']
 
-    if lr < 0.00001:
+    if lr < 0.0001:
         return
 
     if epoch % 100 == 0 and epoch != 0:

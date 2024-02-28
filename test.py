@@ -1,9 +1,9 @@
-import numpy as np
-import struct
+
 import torch
+from torch import nn
 
-path = 'data/dataset/wi/rsrp.npy'
-pos = 'data/dataset/wi/pos.npy'
+print(torch.device('cpu'), torch.device('cuda'), torch.device('cuda:1'))
 
-data = np.load(pos)
-print(type(data))
+print(torch.cuda.device_count())
+print(torch.cuda.is_available())
+print(torch.__version__)

@@ -101,6 +101,78 @@ class SimuCnn1(nn.Module):
         x = self.fc2(x)
         return x
 
+class SimuCnn2(nn.Module):
+    def __init__(self, num_classes=2):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
+        self.fc1 = nn.Linear(64 * 4 * 4, 128)  # 修改全连接层的输入尺寸
+        self.fc2 = nn.Linear(128, num_classes)  # 输出2个标签，坐标 x 和 y
+
+    def forward(self, x):
+        x = torch.relu(self.conv1(x))
+        x = torch.max_pool2d(x, kernel_size=2, stride=2)
+        x = torch.relu(self.conv2(x))
+        x = torch.max_pool2d(x, kernel_size=2, stride=2)
+        x = x.view(-1, 64 * 4 * 4)  # 将特征图展平
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+class SimuCnn3(nn.Module):
+    def __init__(self, num_classes=2):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
+        self.fc1 = nn.Linear(64 * 2 * 2, 128)  # 修改全连接层的输入尺寸
+        self.fc2 = nn.Linear(128, num_classes)  # 输出2个标签，坐标 x 和 y
+
+    def forward(self, x):
+        x = torch.relu(self.conv1(x))
+        x = torch.max_pool2d(x, kernel_size=2, stride=2)
+        x = torch.relu(self.conv2(x))
+        x = torch.max_pool2d(x, kernel_size=2, stride=2)
+        x = torch.relu(self.conv3(x))
+        x = torch.max_pool2d(x, kernel_size=2, stride=2)
+        x = x.view(-1, 64 * 2 * 2)  # 将特征图展平
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+class WiCnn2(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc1 = nn.Linear(64 * 9 * 9, 128)
+        self.fc2 = nn.Linear(128, 2)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 64 * 9 * 9)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+
+class DNN(nn.Module):
+    def __init__(self,in_shape):
+        super(DNN, self).__init__()
+        self.fc1 = nn.Linear(in_shape, 128)  # 输入层到隐藏层
+        self.fc2 = nn.Linear(128, 64)  # 隐藏层到隐藏层
+        self.fc3 = nn.Linear(64, 32)  # 隐藏层到隐藏层
+        self.fc4 = nn.Linear(32, 2)  # 隐藏层到输出层
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))  # 第一个隐藏层，激活函数使用ReLU
+        x = F.relu(self.fc2(x))  # 第二个隐藏层，激活函数使用ReLU
+        x = F.relu(self.fc3(x))  # 第三个隐藏层，激活函数使用ReLU
+        x = self.fc4(x)  # 输出层，不使用激活函数
+        return x
+
 
 class WiCnn1(nn.Module):
     def __init__(self, num_classes=40):
