@@ -1,9 +1,7 @@
-
 import torch
 from torch import nn
 
-print(torch.device('cpu'), torch.device('cuda'), torch.device('cuda:1'))
+a = torch.Tensor([0.1233112])
 
-print(torch.cuda.device_count())
-print(torch.cuda.is_available())
-print(torch.__version__)
+print(torch.round(a, decimals=1))
+print(round(a.item(), 3))

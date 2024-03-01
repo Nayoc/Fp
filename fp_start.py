@@ -11,8 +11,6 @@ import net.fpcnn as fpcnn
 
 
 def fp_train(net, lr, batch_size, epochs=100, record_term=100, source='simulate'):
-
-    torch.cuda.set_per_process_memory_fraction(0.9)
     # train_iter, test_iter = mtrain.load_data(batch_size=batch_size)
     train_iter, test_iter = mtrain.load_data(source=source, batch_size=batch_size)
 
@@ -34,11 +32,10 @@ def fp_train(net, lr, batch_size, epochs=100, record_term=100, source='simulate'
 
 
 if __name__ == '__main__':
-    # net = fpcnn.mLeNet()
-    # net = fpcnn.mMultilayer(_in=900)
-    # net = fpcnn.mResNet(input_channels=1, num_channels=2)
     # fp_train(fpcnn.SimuCnn2(), 0.001, 128, epochs=3000, record_term=100, source='wi')
-    fp_train(fpcnn.DNN(), 0.001, 128, epochs=3000, record_term=100, source='wi')
+    # fp_train(fpcnn.DNN(), 0.001, 128, epochs=3000, record_term=100, source='wi')
     # fp_train(fpcnn.SimuCnn1(), 0.001, 32, epochs=500, record_term=100, source='simulate')
     # fp_train(fpcnn.DNN(), 0.001, 32, epochs=500, record_term=100, source='simulate')
     # fp_train(fpcnn.mAlexNet(), 0.001, 32, epochs=500, record_term=100, source='simulate')
+    # fp_train(fpcnn.Conv1xnV1(18), 0.001, 128, epochs=300, record_term=100, source='wi')
+    fp_train(fpcnn.Conv1xnV2(18), 0.001, 128, epochs=300, record_term=100, source='wi')

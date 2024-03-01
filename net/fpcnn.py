@@ -101,6 +101,7 @@ class SimuCnn1(nn.Module):
         x = self.fc2(x)
         return x
 
+
 class SimuCnn2(nn.Module):
     def __init__(self, num_classes=2):
         super().__init__()
@@ -119,26 +120,6 @@ class SimuCnn2(nn.Module):
         x = self.fc2(x)
         return x
 
-class SimuCnn3(nn.Module):
-    def __init__(self, num_classes=2):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
-        self.fc1 = nn.Linear(64 * 2 * 2, 128)  # 修改全连接层的输入尺寸
-        self.fc2 = nn.Linear(128, num_classes)  # 输出2个标签，坐标 x 和 y
-
-    def forward(self, x):
-        x = torch.relu(self.conv1(x))
-        x = torch.max_pool2d(x, kernel_size=2, stride=2)
-        x = torch.relu(self.conv2(x))
-        x = torch.max_pool2d(x, kernel_size=2, stride=2)
-        x = torch.relu(self.conv3(x))
-        x = torch.max_pool2d(x, kernel_size=2, stride=2)
-        x = x.view(-1, 64 * 2 * 2)  # 将特征图展平
-        x = torch.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
 
 class WiCnn2(nn.Module):
     def __init__(self):
@@ -159,7 +140,7 @@ class WiCnn2(nn.Module):
 
 
 class DNN(nn.Module):
-    def __init__(self,in_shape):
+    def __init__(self, in_shape):
         super(DNN, self).__init__()
         self.fc1 = nn.Linear(in_shape, 128)  # 输入层到隐藏层
         self.fc2 = nn.Linear(128, 64)  # 隐藏层到隐藏层
@@ -193,57 +174,37 @@ class WiCnn1(nn.Module):
         return x.view(-1, 20, 2)
 
 
-class Residual(nn.Module):
-    def __init__(self, input_channels, num_channels,
-                 use_1x1conv=False, strides=1):
+class Conv1xnV2(nn.Module):
+    def __init__(self, m, num_classes=2):
         super().__init__()
-        self.conv1 = nn.Conv2d(input_channels, num_channels,
-                               kernel_size=3, padding=1, stride=strides)
-        self.conv2 = nn.Conv2d(num_channels, num_channels,
-                               kernel_size=3, padding=1)
-        if use_1x1conv:
-            self.conv3 = nn.Conv2d(input_channels, num_channels,
-                                   kernel_size=1, stride=strides)
-        else:
-            self.conv3 = None
-        self.bn1 = nn.BatchNorm2d(num_channels)
-        self.bn2 = nn.BatchNorm2d(num_channels)
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=(1, int(m / 3)), stride=int(m / 6))
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=(1, int(m / 6)), stride=int(m / 9))
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=(1, int(m / 9)), stride=int(m / 12))
+        self.bn1 = nn.BatchNorm2d(128)
+        self.fc1 = nn.Linear(128 * 1 * 1, num_classes)
 
     def forward(self, x):
-        y = F.relu(self.bn1(self.conv1(x)))
-        y = self.bn2(self.conv2(y))
-        if self.conv3:
-            x = self.conv3(x)
-        y += x
-        return F.relu(y)
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = self.bn1(x)
+        x = torch.relu(x)
+        x = x.view(-1, 128 * 1 * 1)
+        x = self.fc1(x)
+        return x
 
 
-class mResNet(nn.Module):
-
-    def __init__(self, input_channels=1, num_channels=2):
+class Conv1xnV1(nn.Module):
+    def __init__(self, m, num_classes=2):
         super().__init__()
-        b1 = nn.Sequential(nn.Conv2d(input_channels, 64, kernel_size=7, stride=2, padding=3),
-                           nn.BatchNorm2d(64), nn.ReLU(),
-                           nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
-        b2 = nn.Sequential(*self.resnet_block(64, 64, 2, first_block=True))
-        b3 = nn.Sequential(*self.resnet_block(64, 128, 2))
-        b4 = nn.Sequential(*self.resnet_block(128, 256, 2))
-        b5 = nn.Sequential(*self.resnet_block(256, 512, 2))
-
-        self.net = nn.Sequential(b1, b2, b3, b4, b5,
-                                 nn.AdaptiveAvgPool2d((1, 1)),
-                                 nn.Flatten(), nn.Linear(512, num_channels))
-
-    def resnet_block(self, input_channels, num_channels, num_residuals,
-                     first_block=False):
-        blk = []
-        for i in range(num_residuals):
-            if i == 0 and not first_block:
-                blk.append(Residual(input_channels, num_channels,
-                                    use_1x1conv=True, strides=2))
-            else:
-                blk.append(Residual(num_channels, num_channels))
-        return blk
+        self.conv1 = nn.Conv2d(1, 128, kernel_size=(1, int(m / 3)), stride=int(m / 6))
+        self.bn1 = nn.BatchNorm2d(128)
+        self.fc1 = nn.Linear(128 * 1 * 5, num_classes)
 
     def forward(self, x):
-        return self.net(x)
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = torch.relu(x)
+        x = x.view(-1, 128 * 1 * 5)
+        x = self.fc1(x)
+        return x

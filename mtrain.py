@@ -221,8 +221,9 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
     """训练模型"""
     for epoch in range(num_epochs):
 
-        train_loss, train_acc, mean_error, min_error, max_error = train_epoch(net, train_iter, loss, updater)
-        test_acc, mean_error, min_error, max_error = evaluate_result(net, test_iter)
+        train_loss, train_acc, train_mean_error, train_min_error, train_max_error = train_epoch(net, train_iter, loss,
+                                                                                                updater)
+        test_acc, test_mean_error, test_min_error, test_max_error = evaluate_result(net, test_iter)
 
         if epoch == 0:
             # 调整损失值到0.1-1区间方便观察
@@ -253,7 +254,9 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
         animator_term.update(epoch % record_term + 1, (term_weight_train_loss, train_acc) + (test_acc,))
         print(
             f'epoch:{epoch},loss:{round(global_weight_train_loss, 8)},train_acc:{round(train_acc, 5)},test_acc:{round(test_acc, 5)} | '
-            f'mean_error:{mean_error},min_error:{min_error},max_error:{max_error}')
+            f'mean_error:{round(train_mean_error.item(), 5)}/{round(test_mean_error.item(), 5)},'
+            f'min_error:{round(train_min_error.item(), 5)}/{round(test_min_error.item(), 5)},'
+            f'max_error:{round(train_max_error.item(), 5)}/{round(test_max_error.item(), 5)}')
 
         adjust_learning_rate(updater, epoch)
 

@@ -26,9 +26,9 @@ def wi_build():
     train_num = 60000
 
     train_rssi = rsrp[0:train_num, :]
-    train_rssi = np.tile(train_rssi, (1, 18)).reshape(-1, 18, 18)
+    train_rssi = train_rssi.reshape(-1, 1, 18)
     test_rssi = rsrp[train_num:, :]
-    test_rssi = np.tile(test_rssi, (1, 18)).reshape(-1, 18, 18)
+    test_rssi = test_rssi.reshape(-1, 1, 18)
 
     train_label = pos[0:train_num, :]
     test_label = pos[train_num:, :]
