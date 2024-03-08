@@ -174,6 +174,31 @@ class WiCnn1(nn.Module):
         return x.view(-1, 20, 2)
 
 
+class Conv1xnV3(nn.Module):
+    def __init__(self, drop_out=0.5):
+        super().__init__()
+        # 样本较小，所以不用大stride降低尺寸，而是用maxpool缓降
+        # 第一、二层层平滑特征图，通过池化减小尺寸
+        self.net = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=(1, 3), padding=(0, 1)),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=(1, 2)),  # 8
+            nn.Conv2d(32, 64, kernel_size=(1, 3), padding=(0, 1)),
+            nn.MaxPool2d(kernel_size=(1, 3), stride=(1, 2)),  # 3
+            nn.Conv2d(64, 128, kernel_size=(1, 3), padding=(0, 1)),
+            nn.Conv2d(128, 128, kernel_size=(1, 3), padding=(0, 1)),
+            nn.Conv2d(128, 64, kernel_size=(1, 3), padding=(0, 1)),
+            # nn.BatchNorm2d(64),
+            nn.Dropout(drop_out)
+        )
+        self.fc1 = nn.Linear(192, 2)
+
+    def forward(self, x):
+        x = self.net(x)
+        x = x.view(-1, 64 * 1 * 3)
+        x = self.fc1(x)
+        return x
+
+
 class Conv1xnV2(nn.Module):
     def __init__(self, m, num_classes=2):
         super().__init__()

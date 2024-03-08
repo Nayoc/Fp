@@ -38,4 +38,4 @@ if __name__ == '__main__':
     # fp_train(fpcnn.DNN(), 0.001, 32, epochs=500, record_term=100, source='simulate')
     # fp_train(fpcnn.mAlexNet(), 0.001, 32, epochs=500, record_term=100, source='simulate')
     # fp_train(fpcnn.Conv1xnV1(18), 0.001, 128, epochs=300, record_term=100, source='wi')
-    fp_train(fpcnn.Conv1xnV2(18), 0.001, 128, epochs=300, record_term=100, source='wi')
+    fp_train(fpcnn.Conv1xnV3(drop_out=0.5), 0.001, 128, epochs=300, record_term=100, source='wi')

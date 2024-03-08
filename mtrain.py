@@ -252,8 +252,9 @@ def train(net, train_iter, test_iter, loss, num_epochs, updater,
 
         animator_global.update(epoch + 1, (global_weight_train_loss, train_acc) + (test_acc,))
         animator_term.update(epoch % record_term + 1, (term_weight_train_loss, train_acc) + (test_acc,))
+        torch.set_printoptions(sci_mode=False, precision=8)
         print(
-            f'epoch:{epoch},loss:{round(global_weight_train_loss, 8)},train_acc:{round(train_acc, 5)},test_acc:{round(test_acc, 5)} | '
+            f'epoch:{epoch},loss:{round(train_loss, 8)},train_acc:{round(train_acc, 5)},test_acc:{round(test_acc, 5)} | '
             f'mean_error:{round(train_mean_error.item(), 5)}/{round(test_mean_error.item(), 5)},'
             f'min_error:{round(train_min_error.item(), 5)}/{round(test_min_error.item(), 5)},'
             f'max_error:{round(train_max_error.item(), 5)}/{round(test_max_error.item(), 5)}')
